@@ -31,6 +31,9 @@ class AgentFilter(object):
             base = "/base_scan"
         elif sim=="morse":
             base = "/scan"
+        else:
+            base = "/scan_raw"
+        print(base)
 
         if(self.ns_ is not ""):
             base = "/"+self.ns_+base
