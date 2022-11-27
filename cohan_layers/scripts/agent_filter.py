@@ -28,9 +28,8 @@ class AgentFilter(object):
         self.tf = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf)
 
-        if self.ns_ is not "":
+        if self.ns_ != "":
             base = self.ns_ + "/scan"
-
         rospy.Subscriber(base, LaserScan, self.laserCB)
         rospy.Subscriber("tracked_agents", TrackedAgents, self.agentsCB)
         self.laser_pub = rospy.Publisher("base_scan_filtered", LaserScan, queue_size=10)
@@ -47,8 +46,8 @@ class AgentFilter(object):
 
         try:
             base_link = "base_footprint"
-            if self.ns_ is not "":
-                base_link = self.ns_.replace("/", "") + "/" + base_link
+            if self.ns_ != "":
+                base_link = self.ns_.replace("/", "") + f"_{base_link}"
             self.laser_transform = self.tf.lookup_transform(
                 "map", base_link, rospy.Time(), rospy.Duration(5.0)
             )
@@ -59,7 +58,7 @@ class AgentFilter(object):
         ):
             pass
 
-        if self.laser_transform.header.frame_id is not "":
+        if self.laser_transform.header.frame_id != "":
             laser_pose = self.laser_transform.transform.translation
 
             rot = self.laser_transform.transform.rotation
@@ -84,7 +83,7 @@ class AgentFilter(object):
                 if mid_idx >= len(scan.ranges):
                     continue
 
-                if pose_type[1] is 0:
+                if pose_type[1] == 0:
                     r = 0.6
                 else:
                     r = 0.4
