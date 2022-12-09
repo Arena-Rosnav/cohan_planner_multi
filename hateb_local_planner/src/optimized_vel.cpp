@@ -35,9 +35,9 @@
  * Author: Phani Teja Singamaneni (email:ptsingaman@laas.fr)
  *********************************************************************/
 #include <hateb_local_planner/optimized_vel.h>
-#define GET_PLAN_SRV "/global_planner/planner/make_plan"
+#define GET_PLAN_SRV "global_planner/planner/make_plan"
 // #define GET_PLAN_SRV "/move_base/GlobalPlanner/make_plan"
-#define OPTIMIZE_SRV "/local_planner/hateb_local_planner_test/optimize"
+#define OPTIMIZE_SRV "local_planner/hateb_local_planner_test/optimize"
 #define AGENTS_SUB "/tracked_agents"
 // #define ROBOT_GOAL_SUB "robot_goal"
 #define DEFAULT_AGENT_PART cohan_msgs::TrackedSegmentType::TORSO
@@ -62,6 +62,11 @@ namespace hateb_local_planner
 
             std::string get_plan_srv_name = std::string(GET_PLAN_SRV);
             std::string optimize_srv_name = std::string(OPTIMIZE_SRV);
+
+            std::string ns_ = ros::this_node::getNamespace();
+            ROS_ERROR("ns_ = %s", ns_.c_str());
+            get_plan_srv_name = ns_ + get_plan_srv_name;
+            optimize_srv_name = ns_ + optimize_srv_name;
 
             getPlan_client = nh.serviceClient<nav_msgs::GetPlan>(get_plan_srv_name, true);
             optimize_client = nh.serviceClient<hateb_local_planner::Optimize>(optimize_srv_name, true);
@@ -93,9 +98,12 @@ namespace hateb_local_planner
 
         try
         {
+            std::string base;
+            ros::param::param<std::string>("robot_base_frame", base, "base_footprint");
             std::string ros_ns = ros::this_node::getNamespace();
-            ros_ns.erase(std::remove(ros_ns.begin(), ros_ns.end(), '/'), ros_ns.end()); // Remove slash from namespace
-            std::string base = ros_ns + "_" + "base_footprint";
+            ROS_ERROR("OPTIMIZED_VEL: ros_ns = %s", ros_ns.c_str());
+            if (ros_ns != "/")
+                base = ros_ns.substr(1, ros_ns.length()) + "/" + base;
             robot_to_map_tf = tf_.lookupTransform("map", base, ros::Time(0));
         }
         catch (tf2::TransformException &ex)

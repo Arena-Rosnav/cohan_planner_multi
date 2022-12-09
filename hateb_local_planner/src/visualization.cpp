@@ -680,8 +680,10 @@ namespace hateb_local_planner
         try
         {
             std::string ros_ns = ros::this_node::getNamespace();
-            ros_ns.erase(std::remove(ros_ns.begin(), ros_ns.end(), '/'), ros_ns.end()); // Remove slash from namespace
-            std::string base = ros_ns + "_" + "base_footprint";
+            std::string base;
+            ros::param::param<std::string>("robot_base_frame", base, "base_footprint");
+            if (ros_ns != "/")
+                base = ros_ns + "/" + base;
 
             tf_.lookupTransform("map", base, ros::Time(0),
                                 robot_to_map_tf);

@@ -105,13 +105,12 @@ namespace agent_path_prediction
         private_nh.param("agent_angle_behind_robot", agent_angle_behind_robot_,
                          AGENT_ANGLE_BEHIND_ROBOT);
 
-        if (robot_frame_id_ != std::string(ROBOT_FRAME_ID))
-        {
-            robot_frame_id_.erase(std::remove(robot_frame_id_.begin(), robot_frame_id_.end(), '/'), robot_frame_id_.end()); // Remove slash from namespace
-            robot_frame_id_ += "_" + std::string(ROBOT_FRAME_ID);
-        }
-
         std::string ros_ns = ros::this_node::getNamespace();
+
+        ros::param::param<std::string>("robot_base_frame", robot_frame_id_, "base_footprint");
+        // ROS_ERROR("Agent path prediction ns: %s", ros_ns.c_str());
+        if (ros_ns != "/")
+            robot_frame_id_ = ros_ns.substr(1, ros_ns.length()) + "/" + robot_frame_id_;
         // initialize subscribers and publishers
         tracked_agents_sub_ =
             private_nh.subscribe(tracked_agents_sub_topic_, 1,
@@ -140,7 +139,7 @@ namespace agent_path_prediction
         get_plan_client_ = private_nh.serviceClient<nav_msgs::GetPlan>(ros_ns + get_plan_srv_name_, true);
         set_goal_srv_ = private_nh.advertiseService("set_agent_goal", &AgentPathPrediction::setExternalGoal, this);
         set_goal_call_srv_ = private_nh.advertiseService("check_agent_goal", &AgentPathPrediction::checkExternalGoal, this);
-        goal_change_srv_ = private_nh.serviceClient<std_srvs::Trigger>("/goal_changed");
+        goal_change_srv_ = private_nh.serviceClient<std_srvs::Trigger>("goal_changed");
 
         showing_markers_ = false;
         got_new_agent_paths_ = false;

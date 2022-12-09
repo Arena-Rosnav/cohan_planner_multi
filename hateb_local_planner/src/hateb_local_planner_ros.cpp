@@ -120,12 +120,8 @@ namespace hateb_local_planner
         {
             // create Node Handle with name of plugin (as used in move_base for loading)
             ros::NodeHandle nh("~/" + name);
-
             // get parameters of TebConfig via the nodehandle and override the default config
             cfg_.loadRosParamFromNodeHandle(nh);
-            std::string ros_ns = ros::this_node::getNamespace();
-            cfg_.odom_topic = ros_ns + "/" + cfg_.odom_topic;
-            ros_ns.erase(std::remove(ros_ns.begin(), ros_ns.end(), '/'), ros_ns.end()); // Remove slash from namespace
 
             // reserve some memory for obstacles
             obstacles_.reserve(500);
@@ -135,6 +131,8 @@ namespace hateb_local_planner
             {
                 ns_ = std::string("");
             }
+            cfg_.odom_topic = ns_ + "/odom";
+
             // init some variables
             tf_ = tf;
             costmap_ros_ = costmap_ros;
@@ -143,7 +141,12 @@ namespace hateb_local_planner
             costmap_model_ = boost::make_shared<base_local_planner::CostmapModel>(*costmap_);
             global_frame_ = costmap_ros_->getGlobalFrameID();
             cfg_.map_frame = global_frame_; // TODO
-            robot_base_frame_ = ros_ns + "_" + std::string(ROBOT_FRAME_ID);
+            ros::param::param<std::string>("robot_base_frame", robot_base_frame_, "base_footprint");
+            if (ns_ != "")
+            {
+                robot_base_frame_ = ns_.substr(1, ns_.length()) + "/" + robot_base_frame_;
+            }
+
             // create visualization instance
             visualization_ = TebVisualizationPtr(new TebVisualization(nh, cfg_));
 
@@ -234,13 +237,12 @@ namespace hateb_local_planner
             publish_makers_srv_name_ = std::string(PUBLISH_MARKERS_SRV_NAME);
             agent_goal_srv_name_ = std::string(AGENT_GOAL_SRV_NAME);
 
-            ros_ns = ros::this_node::getNamespace();
-            if (ros_ns != "")
+            if (ns_ != "")
             {
-                predict_srv_name_ = ros_ns + std::string(PREDICT_SERVICE_NAME);
-                reset_prediction_srv_name_ = ros_ns + std::string(RESET_PREDICTION_SERVICE_NAME);
-                publish_makers_srv_name_ = ros_ns + std::string(PUBLISH_MARKERS_SRV_NAME);
-                agent_goal_srv_name_ = ros_ns + std::string(AGENT_GOAL_SRV_NAME);
+                predict_srv_name_ = ns_ + std::string(PREDICT_SERVICE_NAME);
+                reset_prediction_srv_name_ = ns_ + std::string(RESET_PREDICTION_SERVICE_NAME);
+                publish_makers_srv_name_ = ns_ + std::string(PUBLISH_MARKERS_SRV_NAME);
+                agent_goal_srv_name_ = ns_ + std::string(AGENT_GOAL_SRV_NAME);
             }
             predict_agents_client_ = nh.serviceClient<agent_path_prediction::AgentPosePredict>(predict_srv_name_, true);
             reset_agents_prediction_client_ = nh.serviceClient<std_srvs::Empty>(reset_prediction_srv_name_, true);

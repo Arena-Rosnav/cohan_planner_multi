@@ -53,13 +53,11 @@ namespace hateb_local_planner
         // get private node handle
         ros::NodeHandle nh;
 
-        if (!ros::param::get("~ns", ns_))
-        {
-            ns_ = std::string("");
-        }
-        std::string ros_ns = ros::this_node::getNamespace();
-        ros_ns.erase(std::remove(ros_ns.begin(), ros_ns.end(), '/'), ros_ns.end()); // Remove slash from namespace
-
+        ns_ = ros::this_node::getNamespace();
+        ros::param::param<std::string>("robot_base_frame", robot_frame_, "base_footprint");
+        // ROS_ERROR("BACKOFF: ns_ = %s", ns_.c_str());
+        if (ns_ != "/")
+            robot_frame_ = ns_.substr(1, ns_.length()) + "/" + robot_frame_;
         costmap_ros_ = costmap_ros;
         costmap_ = costmap_ros_->getCostmap();
 
@@ -68,8 +66,8 @@ namespace hateb_local_planner
 
         if (ns_ != "")
         {
-            current_goal_topic = "/" + ns_ + current_goal_topic;
-            publish_goal_topic = "/" + ns_ + publish_goal_topic;
+            current_goal_topic = ns_ + current_goal_topic;
+            publish_goal_topic = ns_ + publish_goal_topic;
         }
 
         current_goal_sub_ = nh.subscribe(current_goal_topic, 1, &Backoff::currentgoalCB, this);
@@ -90,14 +88,6 @@ namespace hateb_local_planner
         // if (is_real)
         // {
         //     map_frame = "odom_combined";
-        // }
-
-        robot_frame_ = ros_ns + "_" + std::string(ROBOT_FRAME_ID);
-        // if (ns_ != "")
-        // {
-        //     robot_frame_ = ns_;
-        //     robot_frame_.erase(std::remove(robot_frame_.begin(), robot_frame_.end(), '/'), robot_frame_.end()); // Remove slash from namespace
-        //     robot_frame_ += "_" + std::string(ROBOT_FRAME_ID);
         // }
 
         ROS_DEBUG_NAMED(NODE_NAME, "node %s initialized", NODE_NAME);

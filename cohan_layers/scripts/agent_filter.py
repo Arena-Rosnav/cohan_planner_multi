@@ -7,6 +7,7 @@ import rospy
 import sys
 import tf2_ros
 import numpy as np
+import os
 from sensor_msgs.msg import LaserScan
 from cohan_msgs.msg import TrackedAgents, TrackedSegmentType
 from tf.transformations import euler_from_quaternion
@@ -16,21 +17,20 @@ from geometry_msgs.msg import TransformStamped
 class AgentFilter(object):
     def __init__(self, ns, sim):
         rospy.init_node("agent_filter")
-        self.ns_ = ns
+        if ns != "":
+            self.ns_ = rospy.get_namespace()
         self.rate = rospy.Rate(50.0)
         self.filtered_scan = LaserScan()
         self.segment_type = TrackedSegmentType.TORSO
         self.agents = []
         self.laser_transform = TransformStamped()
         self.got_scan = False
-
         # Intialize tf2 transform listener
         self.tf = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf)
 
-        if self.ns_ != "":
-            base = self.ns_ + "/scan"
-        rospy.Subscriber(base, LaserScan, self.laserCB)
+
+        rospy.Subscriber("scan", LaserScan, self.laserCB)
         rospy.Subscriber("tracked_agents", TrackedAgents, self.agentsCB)
         self.laser_pub = rospy.Publisher("base_scan_filtered", LaserScan, queue_size=10)
 
@@ -45,9 +45,9 @@ class AgentFilter(object):
         filtered_scan.header.stamp = rospy.Time.now()
 
         try:
-            base_link = "base_footprint"
-            if self.ns_ != "":
-                base_link = self.ns_.replace("/", "") + f"_{base_link}"
+            base_link = rospy.get_param("robot_base_frame")
+            if self.ns_ != "/":
+                base_link = self.ns_[1:] + base_link
             self.laser_transform = self.tf.lookup_transform(
                 "map", base_link, rospy.Time(), rospy.Duration(5.0)
             )
